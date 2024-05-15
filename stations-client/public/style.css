@@ -1,0 +1,54 @@
+/* Основні стилі */
+
+body {
+    font-family: Arial, sans-serif;
+}
+
+.header {
+    background-color: #333;
+    color: #fff;
+    padding: 20px 0;
+}
+
+.button {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+    background-color: #4CAF50; /* Зелений колір */
+    color: white;
+    border-radius: 5px;
+    margin: 5px;
+    transition: background-color 0.3s;
+}
+
+.button:hover {
+    background-color: #45a049; /* Темнозелений колір при наведенні */
+}
+
+input[type="text"] {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    margin: 5px;
+}
+
+input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+/* Стилі для списку станцій */
+
+.station {
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+    transition: background-color 0.3s;
+}
+
+.station:last-child {
+    border-bottom: none;
+}
+
+.station:hover {
+    background-color: #f2f2f2; /* Світло-сірий колір при наведенні */
+}

@@ -63,7 +63,6 @@ async function addStation(stationData) {
         if (!response.ok) {
             throw new Error('Не вдалося додати станцію');
         }
-        await fetchStations();
     } catch (error) {
         console.error(error.message);
     }
@@ -77,7 +76,7 @@ async function deleteStation(stationId) {
         if (!response.ok) {
             throw new Error(`Помилка при видаленні станції з ID ${stationId}`);
         }
-        await fetchStations();
+        
         console.log(`Станцію з ID ${stationId} успішно видалено`);
     } catch (error) {
         console.error(error.message);
@@ -94,7 +93,7 @@ async function editStation(stationId, updatedData) {
     };
     const response = await fetch(`${BASE_URL}/${stationId}`, requestOptions);
     if (response.ok) {
-        await fetchStations();
+       
         console.log(`Станцію з ID ${stationId} успішно відредаговано`);
         return true;
     } else {
@@ -135,7 +134,6 @@ elements.deleteButton.addEventListener('click', async () => {
     const stationID =  await getInputElement('station-id-input');
     await deleteStation(stationID);
     await showStations();
-
 })
 
 elements.editButton.addEventListener('click', async () => {

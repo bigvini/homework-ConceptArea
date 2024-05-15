@@ -1,106 +1,92 @@
-import { Request, Response } from 'express';
-import { readFileSync, writeFile } from 'fs';
+import { readFile, writeFile } from 'fs/promises';
+import { Station } from '../interfaces/station_intreface';
+const pathStationJson: string = 'stations.json';
 
-export const servisGetStations = (req: Request, res: Response): void => {
+export const servisGetStations = async (): Promise<Station[]> => {
     try {
-        const jsonData = readFileSync('stations.json', 'utf8');
-        const data: any = JSON.parse(jsonData);
-        res.json(data);
+        const jsonData = await readFile(pathStationJson, 'utf8');
+        console.log(jsonData);
+        const data: Station[] = JSON.parse(jsonData);
+        return data;
     } catch (error) {
-        const err = error as Error;
+        const err: Error = error as Error;
         console.error(err.message);
-        res.status(500).send('Помилка сервера');
+        return [];
     }
 };
 
-export const servisGetStation = (req: Request, res: Response): void => {
+export const servisGetStation = async (id: string): Promise<Station | null> => {
     try {
-        const jsonData = readFileSync('stations.json', 'utf8');
-        const data: any[] = JSON.parse(jsonData);
-        const station = data.find((st: any) => st.id === req.params.id);
-        if (station) {
-            res.json(station);
-        } else {
-            res.status(404).send('Станція не знайдена');
-        }
+        const jsonData = await readFile(pathStationJson, 'utf8');
+        const data: Station[] = JSON.parse(jsonData);
+        const stationId = parseInt(id);
+        const station: Station | undefined = data.find((st: Station) => st.id === stationId);
+        return station || null;
     } catch (error) {
         const err = error as Error;
         console.error(err.message);
-        res.status(500).send('Помилка сервера');
+        return null;
     }
 };
 
-export const servisCreateStation = (req: Request, res: Response): void => {
+export const servisCreateStation = async (station: Station | null): Promise<Station | null> => {
     try {
-        const station = req.body;
         if (!station) {
-            res.status(400).send('Не вказано дані про станцію');
+            console.log('Не вказано дані про станцію');
+            return null;
         }
-        const jsonData = readFileSync('stations.json', 'utf8');
-        const data: any[] = JSON.parse(jsonData);
-        const stationId = data.length > 0 ? data[data.length - 1].id + 1 : 1;
-        const newStation = { ...station, id: stationId };
+        const jsonData = await readFile(pathStationJson, 'utf8');
+        const data: Station[] = JSON.parse(jsonData);
+        const stationId: number = data.length > 0 ? data[data.length - 1].id + 1 : 1;
+        const newStation: Station = { id: stationId, address: station.address, status: station.status };
         data.push(newStation);
-        writeFile('stations.json', JSON.stringify(data, null, 2), (err) => {
-            if (err) {
-                console.error(err.message);
-                return res.status(500).send('Помилка сервера');
-            }
-            res.json(newStation);
-        });
+        writeFile(pathStationJson, JSON.stringify(data, null, 2));
+        console.log('Станція успішно додана');
+        return newStation;
     } catch (error) {
         const err = error as Error;
         console.error(err.message);
-        res.status(500).send('Помилка сервера');
+        return null;
     }
 };
 
-export const servisDeleteStation = (req: Request, res: Response): void => {
+export const servisDeleteStation = async (id: string): Promise<void> => {
     try {
-        const jsonData = readFileSync('stations.json', 'utf8');
-        const data: any[] = JSON.parse(jsonData);
-        const stationId = parseInt(req.params.id);
-        const stationIndex = data.findIndex((station: any) => station.id === stationId);
+        const jsonData = await readFile(pathStationJson, 'utf8');
+        const data: Station[] = JSON.parse(jsonData);
+        const stationId = parseInt(id);
+        const stationIndex = data.findIndex((station: Station) => station.id === stationId);
         if (stationIndex !== -1) {
             data.splice(stationIndex, 1);
-            writeFile('stations.json', JSON.stringify(data, null, 2), (err) => {
-                if (err) {
-                    console.error(err.message);
-                    return res.status(500).json({ error: 'Помилка сервера' });
-                }
-                res.json({ message: 'Станція успішно видалена' });
-            });
+            writeFile(pathStationJson, JSON.stringify(data, null, 2));
+            console.log('Станція успішно видалена');
         } else {
-            res.status(404).json({ error: 'Станція не знайдена' });
+            console.log('Станція не знайдена');
         }
     } catch (error) {
-        const err = error as Error;
+        let err = error as Error;
         console.error(err.message);
-        res.status(500).send('Помилка сервера');
     }
 };
 
-export const servisUpdateStation = (req: Request, res: Response): void => {
+export const servisUpdateStation = async (id: string, updatedData: Partial<Station>): Promise<boolean> => {
     try {
-        const jsonData = readFileSync('stations.json', 'utf8');
-        const data: any[] = JSON.parse(jsonData);
-        const stationId = parseInt(req.params.id);
-        const stationIndex = data.findIndex((st: any) => st.id === stationId);
+        const jsonData = await readFile(pathStationJson, 'utf8');
+        const data: Station[] = JSON.parse(jsonData);
+        const stationId = parseInt(id);
+        const stationIndex = data.findIndex((st: Station) => st.id === stationId);
         if (stationIndex === -1) {
-            res.status(404).json({ error: 'Станція не знайдена' });
+            console.log('Станція не знайдена');
+            return false;
         }
-        const updatedStation = { ...data[stationIndex], ...req.body };
+        const updatedStation = { ...data[stationIndex], ...updatedData };
         data[stationIndex] = updatedStation;
-        writeFile('stations.json', JSON.stringify(data, null, 2), (err) => {
-            if (err) {
-                console.error(err.message);
-                return res.status(500).send('Помилка сервера');
-            }
-            return res.json({ message: 'Станція успішно оновлена', updatedStation });
-        });
+        await writeFile(pathStationJson, JSON.stringify(data, null, 2));
+        console.log('Станція успішно оновлена');
+        return true;
     } catch (error) {
-        const err = error as Error;
+        let err = error as Error;
         console.error(err.message);
-        res.status(500).send('Помилка сервера');
+        return false;
     }
 };
