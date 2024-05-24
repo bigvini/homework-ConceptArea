@@ -1,3 +1,5 @@
+import './style.css';
+
 const BASE_URL = "http://localhost:3000/stations";
 
 const elements = {
@@ -16,6 +18,7 @@ const elements = {
 };
 
 let stations;
+let metrics;
 let isAVisible = false;
 
 async function fetchStations() {
@@ -36,20 +39,41 @@ async function showStations(filterActive = false) {
     }
     const stationsContainer = elements.stationsList;
     stationsContainer.innerHTML = '';
-    stations.forEach(station => {
+    stations.forEach(async station => {
         if (!filterActive || station.status === filterActive) {
             const stationElement = document.createElement("div");
             stationElement.classList.add("station");
             stationElement.innerHTML = `
-                <p>ID: ${station.id}</p>
-                <p>Address: ${station.address}</p>
-                <p>Status: ${station.status ? 'Active' : 'Inactive'}</p>
+                <p>ID: ${station.id} Address: ${station.address} Status: ${station.status ? 'Active' : 'Inactive'}</p>
+                <p><div id="metrics-${station.id}"></div>
                 <hr>
             `;
             stationsContainer.appendChild(stationElement);
+
+            const metricsContainer = document.getElementById(`metrics-${station.id}`);
+            if (station.status) {
+                try {
+                    const metricsResponse = await fetch(`${BASE_URL}/${station.id}/metrics`);
+                    if (!metricsResponse.ok) {
+                        throw new Error('Не вдалося отримати дані про метрики для станції');
+                    }
+                    const metricsData = await metricsResponse.json();
+                    metricsContainer.innerHTML = `
+                        <p>Temperature: ${metricsData[0].value_metric} | Dose Rate: ${metricsData[1].value_metric} | Humidity: ${metricsData[2].value_metric}</p>
+                    `;
+                } catch (error) {
+                    console.error(error.message);
+                    metricsContainer.innerHTML = '<p>Failed to fetch metrics</p>';
+                }
+            } else {
+                metricsContainer.innerHTML = `
+                    <p>Temperature: 0 | Dose Rate: 0 | Humidity: 0</p>
+                `;
+            }
         }
     });
 }
+
 
 async function addStation(stationData) {
     try {
@@ -66,6 +90,7 @@ async function addStation(stationData) {
     } catch (error) {
         console.error(error.message);
     }
+    await showStations();
 }
 
 async function deleteStation(stationId) {
@@ -101,15 +126,14 @@ async function editStation(stationId, updatedData) {
     }
 }
 
-async function toggleFormVisibility(form) {
-    if (!isAVisible) {
-        form.style.display = 'block';
-        isAVisible = true;
-        await showStations();
-    } else {
-        form.style.display = 'none';
-        isAVisible = false;
-    }
+async function toggleFormVisibility(formToShow) {
+    const forms = [elements.addForm, elements.editForm, elements.deleteForm];
+    forms.forEach(form => {
+        if (form !== formToShow) {
+            form.style.display = 'none';
+        }
+    });
+    formToShow.style.display = formToShow.style.display === 'block' ? 'none' : 'block';
 }
 
 async function getInputElement(inputId) {
@@ -127,12 +151,14 @@ elements.addButton.addEventListener('click', async () => {
                 status: true ,
             };
             await addStation(newStationData);
+            await fetchStations();  
             await showStations();
 });
 
 elements.deleteButton.addEventListener('click', async () => {
     const stationID =  await getInputElement('station-id-input');
     await deleteStation(stationID);
+    await fetchStations();  
     await showStations();
 })
 
@@ -144,6 +170,7 @@ elements.editButton.addEventListener('click', async () => {
     stationStatusInput.checked = false;
     const editSuccessful = await editStation(stationID, { address: stationNewAddress, status: newStatus });
     if(editSuccessful) {
+        await fetchStations();  
         await showStations();
     }
 });
